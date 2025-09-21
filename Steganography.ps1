@@ -37,7 +37,10 @@ function Decode-ImageBytes{
     $DataOffset = "0x"+$Bytes[13]+$Bytes[12]+$Bytes[11]+$Bytes[10] #convert the data offset field from the .bmp header into a hex string, basically so we can start after the header
     $CipherString = ""
     for ($i = ([int]$DataOffset+3); $i -lt $Bytes.Count; $i = $i + 4) {#starting from the header, check each of the padding bytes...
-        $CipherString = $CipherString + $Bytes[$i] #...and add it to the ciphertext string
+        if($Bytes[$i] -ne "FF"){ #This is only when I'm not adding noise
+            $CipherString = $CipherString + $Bytes[$i] #...and add it to the ciphertext string
+        }
+        
     }
     $OutputString = XOR-Light -InputString $CipherString -KeyString $KeyString -Decrypt #decrypt the ciphertext string
     $OutputString = $OutputString.split(":STOP:")[0] #Split on the delimiter, and take only the part before it
