@@ -1,6 +1,6 @@
 $ClearFile = "$PSSCriptRoot\Cat.bmp"
 $CipherFile = "$PSSCriptRoot\SuspiciousImage.bmp"
-$Encode = $true #encode/decode
+$Encode = $false #encode/decode
 
 function Encode-ImageBytes {
     param(
