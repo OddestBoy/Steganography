@@ -4,7 +4,7 @@ A Powershell script to hide an encrypted string in a .bmp file
 Usage:
 Encryption -
 set $Encode=$true
-Place your (32 bit .bmp) image file into the same folder as the script, and place it's name into the $ClearFile variable. Currently it will look for a file named "Cat.bmp"
+Place your (32 bit .bmp - the script will check, also can be seen from the properties tab in windows) image file into the same folder as the script, and place it's name into the $ClearFile variable. Currently it will look for a file named "Cat.bmp"
 Run the script, entering your clear text and key when prompted
 This will create a new image in the same folder, SuspiciousImage.bmp, containing the encrypted message
 
