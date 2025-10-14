@@ -10,21 +10,18 @@ function Encode-ImageBytes {
         [string]$CipherFile
     )
     $DataOffset = "0x"+$Bytes[13]+$Bytes[12]+$Bytes[11]+$Bytes[10] #convert the data offset field from the .bmp header into a hex string, basically so we can start after the header
-    #$InputString = $InputString + ":STOP:" #delimits code from noise #Leaving this out for the challenge
+    $InputString = $InputString + ":STOP:" #delimits code from noise
     $InputString = XOR-Light -InputString $InputString -KeyString $KeyString
     Write-Output "`nCiphertext hidden in image: $InputString" 
     $InputArray = $InputString -split '(..)' -ne '' #Input string should be hex, split it into individual bytes
     for ($i = 0; $i -lt $InputArray.Count; $i++) { #for each byte of input...
         $Bytes[([int]$DataOffset+3+(4*$i))] = $InputArray[$i] #find the corresponding byte of the image file (every 4th byte, starting after the header) and replace it with the byte from our ciphertext
     }
-    #Leaving this out for the challenge, otherwise it takes ages to decrypt each guess
-    <#
     for ($i = ([int]$DataOffset+3); $i -lt $Bytes.Count; $i = $i + 4) {#starting from the header, check each of the padding bytes...
         if($Bytes[$i] -eq "FF"){ #...if it's still FF (and isn't holding any data)...
             $Bytes[$i] = ((get-random -Maximum 255 -Minimum 0) | format-hex -count 1).HexBytes #...replace it with a random hex byte just to be mean
         }
     }
-    #>
     $OutBytes = $Bytes | %{[int]("0x"+$_)} #convert our bytes from hex to decimal, which .net can use
     [IO.File]::WriteAllBytes($CipherFile,$OutBytes) #write all our our bytes into our output .bmp
 }
@@ -71,19 +68,12 @@ function XOR-Light {
     }else{
         $InputArray = $InputString -split '(.)' -ne ''
     }
-    #Special, easier key function...
-    $Key = $KeyString
-    While($Key.Length -lt $InputArray.Count){
-        $Key = $Key + $KeyString
-    }
-    #...normally this should use the below key function, which hashes the key. However this is irreversible so you couldn't really do cryptoanalysis to get the key, you'd just need to brute force it which is no fun
-    <#
+
     $Key = [Convert]::ToBase64String([System.Text.Encoding]::ASCII.GetBytes((Get-FileHash -InputStream ([IO.MemoryStream]::new([byte[]][char[]]$KeyString)) -Algorithm SHA256).Hash))
     While($Key.Length -lt $InputArray.Count){
         $KeyRaw = [Convert]::ToBase64String([System.Text.Encoding]::ASCII.GetBytes((Get-FileHash -InputStream ([IO.MemoryStream]::new([byte[]][char[]]$Key)) -Algorithm SHA256).Hash))
         $Key = $Key + $KeyRaw
     }
-    #>
 
     $KeyArray = $Key -split '(.)' -ne '' #Split the key into individual characters
     $OutputString = ""
@@ -96,7 +86,10 @@ function XOR-Light {
             $OutChar = (("0x"+($InputArray[$i] | format-hex -Count 1).HexBytes) -bxor ("0x"+($KeyArray[$i] | format-hex -Count 1).HexBytes) | Format-Hex -Count 1).HexBytes #...take the character from the input and corresponding value from the key, and xor their hex values together
             if($DebugMode){Write-Warning "E $i - $(($InputArray[$i]| format-hex -Count 1).HexBytes) - $(($KeyArray[$i]| format-hex -Count 1).HexBytes) - $OutChar"}
         }
-        $OutputString = $OutputString +  $OutChar
+        $OutputString = $OutputString + $OutChar
+        if($Decrypt -and $OutputString.EndsWith(":STOP:")){
+            Break
+        }
     }
     If($DebugMode){$EndTime = get-date; Write-Warning "$($InputArray.Count) characters with $($KeyString.Length) length key in time $($EndTime - $StartTime)"}
     return $OutputString
